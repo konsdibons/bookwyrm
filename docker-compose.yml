@@ -8,42 +8,9 @@ x-logging:
     max-file: "2"
 
 services:
-  nginx:
-    image: nginx:1.25.2
-    logging: *default-logging
-    restart: unless-stopped
-    ports:
-      - "${PORT:-80}:80"
-      - "${PORT:-443:443}"
-    depends_on:
-      - web
-    networks:
-      - main
-    environment:
-      - DOMAIN=${DOMAIN}
-      - MAX_UPLOAD_MiB=${DATA_UPLOAD_MAX_MEMORY_MiB:-100}
-    volumes:
-      - ./nginx/${NGINX_SETUP:-https}.conf:/etc/nginx/templates/default.conf.template
-      - ./nginx/server_config:/etc/nginx/templates/server_config.template
-      - ./nginx/locations:/etc/nginx/conf.d/locations
-      - ./nginx/server_name:/etc/nginx/conf.d/server_name
-      - ./nginx/99-autoreload.sh:/docker-entrypoint.d/99-autoreload.sh
-      - ./certbot/conf:/etc/nginx/ssl
-      - ./certbot/data:/var/www/certbot
-      - static_volume:/app/static
-      - media_volume:/app/images
-  certbot:
-    image: certbot/certbot:latest
-    entrypoint: /bin/sh -c "trap exit TERM; while [ "$NGINX_SETUP" = "https" ];do certbot renew --webroot --webroot-path=/var/www/certbot; sleep 1d & wait $${!}; done"
-    depends_on:
-      - nginx
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/logs:/var/log/letsencrypt
-      - ./certbot/data:/var/www/certbot
   db:
     image: postgres:17
-    env_file: .env
+    env_file: stack.env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -57,7 +24,8 @@ services:
       - main
   web:
     build: .
-    env_file: .env
+    env_file:
+      - stack.env
     command: gunicorn bookwyrm.wsgi:application
     volumes:
       - .:/app
@@ -74,6 +42,8 @@ services:
         condition: service_started
     networks:
       - main
+    ports:
+      - "8001:8001"
   redis_activity:
     image: redis:7.2.1
     command: redis-server --requirepass ${REDIS_ACTIVITY_PASSWORD} --appendonly yes --port ${REDIS_ACTIVITY_PORT}
@@ -81,7 +51,7 @@ services:
     volumes:
       - ./redis.conf:/etc/redis/redis.conf
       - redis_activity_data:/data
-    env_file: .env
+    env_file: stack.env
     networks:
       - main
     restart: on-failure
@@ -92,12 +62,12 @@ services:
     volumes:
       - ./redis.conf:/etc/redis/redis.conf
       - redis_broker_data:/data
-    env_file: .env
+    env_file: stack.env
     networks:
       - main
     restart: on-failure
   celery_worker:
-    env_file: .env
+    env_file: stack.env
     build: .
     networks:
       - main
@@ -113,7 +83,7 @@ services:
       - redis_broker
     restart: on-failure
   celery_beat:
-    env_file: .env
+    env_file: stack.env
     build: .
     networks:
       - main
@@ -131,7 +101,7 @@ services:
     build: .
     command: celery -A celerywyrm flower --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD} --url_prefix=flower
     logging: *default-logging
-    env_file: .env
+    env_file: stack.env
     volumes:
       - .:/app
       - static_volume:/app/static
@@ -143,19 +113,19 @@ services:
     restart: on-failure
   dev-tools:
     build: dev-tools
-    env_file: .env
+    env_file: stack.env
     volumes:
       - /app/dev-tools/
       - .:/app
     profiles:
       - tools
 volumes:
-  pgdata:
-  backups:
-  static_volume:
-  media_volume:
-  exports_volume:
-  redis_broker_data:
-  redis_activity_data:
+  pgdata: /volume1/docker/bookwyrm/pgdata
+  backups: /volume1/docker/bookwyrm/backups
+  static_volume: /volume1/docker/bookwyrm/static
+  media_volume: /volume1/docker/bookwyrm/media
+  exports_volume: /volume1/docker/bookwyrm/exports
+  redis_broker_data: /volume1/docker/bookwyrm/redis_broker_data
+  redis_activity_data: /volume1/docker/bookwyrm/redis_activity_data
 networks:
   main:
