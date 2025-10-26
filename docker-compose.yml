@@ -120,12 +120,47 @@ services:
     profiles:
       - tools
 volumes:
-  pgdata: /volume1/docker/bookwyrm/pgdata
-  backups: /volume1/docker/bookwyrm/backups
-  static_volume: /volume1/docker/bookwyrm/static
-  media_volume: /volume1/docker/bookwyrm/media
-  exports_volume: /volume1/docker/bookwyrm/exports
-  redis_broker_data: /volume1/docker/bookwyrm/redis_broker_data
-  redis_activity_data: /volume1/docker/bookwyrm/redis_activity_data
+  pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/docker/bookwyrm/pgdata
+  backups:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/docker/bookwyrm/backups
+  static_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/docker/bookwyrm/static
+  media_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/docker/bookwyrm/media
+  exports_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/docker/bookwyrm/exports
+  redis_broker_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/docker/bookwyrm/redis_broker_data
+  redis_activity_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/docker/bookwyrm/redis_activity_data
 networks:
   main:
