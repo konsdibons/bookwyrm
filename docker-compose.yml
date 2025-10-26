@@ -33,7 +33,7 @@ services:
       - ./certbot/data:/var/www/certbot
   db:
     image: postgres:17
-    env_file: .env
+    env_file: stack.env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -46,7 +46,7 @@ services:
       - main
   web:
     build: .
-    env_file: .env
+    env_file: stack.env
     command: gunicorn bookwyrm.wsgi:application
     volumes:
       - .:/app
@@ -69,7 +69,7 @@ services:
     volumes:
       - ./redis.conf:/etc/redis/redis.conf
       - redis_activity_data:/data
-    env_file: .env
+    env_file: stack.env
     networks:
       - main
     restart: on-failure
@@ -79,12 +79,12 @@ services:
     volumes:
       - ./redis.conf:/etc/redis/redis.conf
       - redis_broker_data:/data
-    env_file: .env
+    env_file: stack.env
     networks:
       - main
     restart: on-failure
   celery_worker:
-    env_file: .env
+    env_file: stack.env
     build: .
     networks:
       - main
@@ -99,7 +99,7 @@ services:
       - redis_broker
     restart: on-failure
   celery_beat:
-    env_file: .env
+    env_file: stack.env
     build: .
     networks:
       - main
@@ -115,7 +115,7 @@ services:
   flower:
     build: .
     command: celery -A celerywyrm flower --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD} --url_prefix=flower
-    env_file: .env
+    env_file: stack.env
     volumes:
       - .:/app
       - static_volume:/app/static
@@ -127,7 +127,7 @@ services:
     restart: on-failure
   dev-tools:
     build: dev-tools
-    env_file: .env
+    env_file: stack.env
     volumes:
       - /app/dev-tools/
       - .:/app
